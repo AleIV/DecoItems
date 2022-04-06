@@ -1,13 +1,9 @@
 package me.aleiv.core.paper;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-
+import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.ArmorStand.LockType;
 import org.bukkit.entity.EntityType;
@@ -19,39 +15,15 @@ import lombok.Data;
 import me.aleiv.core.paper.objects.DecoItem;
 
 @Data
-public class DecoLunchManager{
+public class DecoItemsManager{
 
     Core instance;
 
-    public static HashMap<String, DecoItem> decoItems = new HashMap<>();
+    public HashMap<String, DecoItem> decoItems = new HashMap<>();
 
-    public DecoLunchManager(Core instance) {
+    public DecoItemsManager(Core instance) {
         this.instance = instance;
 
-        initSpecialDecoItems();
-        initAnnotations();
-
-    }
-
-    private void initSpecialDecoItems() {
-        try {
-
-            // NAME | CUSTOM MODEL DATA | MATERIAL | DECOTAGS
-                
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Couldn't register special Deco Items, Json data is not present.");
-        }
-
-    }
-
-    private void put(String name, int customModelData, Material material, List<DecoTag> decoTags) {
-        decoItems.put(name, new DecoItem(name, customModelData, material, decoTags));
-    }
-
-    private void put(String name, int customModelData, List<DecoTag> decoTags) {
-        decoItems.put(name, new DecoItem(name, customModelData, Material.RABBIT_HIDE, decoTags));
     }
 
     public void spawnDecoStand(Location loc, Player player, DecoItem decoItem) {
@@ -62,7 +34,17 @@ public class DecoLunchManager{
 
         stand.setRotation(player.getLocation().getYaw()+180, 0);
         stand.setInvisible(true);
-        stand.setGravity(false);
+        stand.setSmall(true);
+        stand.setBasePlate(true);
+
+        var tags = decoItem.getDecoTags();
+
+        stand.setGravity(tags.contains(DecoTag.GRAVITY));
+        stand.setGlowing(tags.contains(DecoTag.GLOWING));
+
+        if(player.getGameMode() == GameMode.CREATIVE){
+            stand.setInvulnerable(tags.contains(DecoTag.UNBREAKABLE));
+        }
 
         for (var equipmentSlot : EquipmentSlot.values()) {
             for (var lock : LockType.values()) {
@@ -70,17 +52,10 @@ public class DecoLunchManager{
             }
         }
 
-        var decoTags = decoItem.getDecoTags();
         var equip = stand.getEquipment();
         var item = decoItem.getItemStack();
 
-        if(decoTags.contains(DecoTag.HEAD)){
-            equip.setHelmet(item);
-        }else if(decoTags.contains(DecoTag.MAIN_HAND)){
-            equip.setItemInMainHand(item);
-        }else if(decoTags.contains(DecoTag.OFF_HAND)){
-            equip.setItemInOffHand(item);
-        }
+        equip.setHelmet(item);
         
 
     }
@@ -136,25 +111,8 @@ public class DecoLunchManager{
         return helmet != null && isDecoItem(helmet);
     }
 
-    private void initAnnotations() {
-        var manager = instance.getCommandManager();
-
-        manager.getCommandCompletions().registerAsyncCompletion("bool", c -> {
-            return ImmutableList.of("true", "false");
-        });
-
-        manager.getCommandCompletions().registerAsyncCompletion("decotag", c -> {
-            return Arrays.stream(DecoTag.values()).map(val -> val.toString()).toList();
-        });
-
-        manager.getCommandCompletions().registerAsyncCompletion("decoitems", c -> {
-            return decoItems.keySet().stream().toList();
-        });
-
-    }
-
     public enum DecoTag {
-        SIT, UNBREAKABLE, BARRIER, OFF_HAND, MAIN_HAND, HEAD
+        SIT, UNBREAKABLE, STAND, HAT, NONE, BARRIER, GRAVITY, GLOWING
     }
 
 }

@@ -1,7 +1,9 @@
 package me.aleiv.core.paper.listeners;
 
+import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 
@@ -19,7 +21,7 @@ public class CanceledListener implements Listener{
     public void onRenameCustomModel(PrepareAnvilEvent e){
         var inv = e.getInventory();
         var item = inv.getItem(0);
-        var manager = instance.getDecoLunchManager();
+        var manager = instance.getDecoItemsManager();
         var result = e.getResult();
         if(item != null && manager.isDecoItem(item)){
             e.setResult(null);
@@ -32,7 +34,7 @@ public class CanceledListener implements Listener{
     @EventHandler
     public void onCraftCustomModel(PrepareItemCraftEvent e){
         var table = e.getInventory().getContents();
-        var manager = instance.getDecoLunchManager();
+        var manager = instance.getDecoItemsManager();
 
         for (var item : table) {
             if(item != null && item.hasItemMeta() && manager.isDecoItem(item)){
@@ -41,6 +43,14 @@ public class CanceledListener implements Listener{
             }
         }
 
+    }
+
+    @EventHandler
+    public void onStandDrop(ItemSpawnEvent e){
+        var item = e.getEntity();
+        if(item.getItemStack().getType() == Material.ARMOR_STAND){
+            e.setCancelled(true);
+        }
     }
     
 }

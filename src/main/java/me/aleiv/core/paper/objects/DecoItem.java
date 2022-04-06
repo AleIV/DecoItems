@@ -9,8 +9,7 @@ import org.bukkit.inventory.ItemStack;
 
 import fr.mrmicky.fastinv.ItemBuilder;
 import lombok.Data;
-import me.aleiv.core.paper.DecoLunchManager.DecoTag;
-import net.md_5.bungee.api.ChatColor;
+import me.aleiv.core.paper.DecoItemsManager.DecoTag;
 
 @Data
 public class DecoItem {

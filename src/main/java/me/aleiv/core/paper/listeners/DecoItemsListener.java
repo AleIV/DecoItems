@@ -1,6 +1,5 @@
 package me.aleiv.core.paper.listeners;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.event.EventHandler;
@@ -11,7 +10,7 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import me.aleiv.core.paper.Core;
-import me.aleiv.core.paper.DecoLunchManager.DecoTag;
+import me.aleiv.core.paper.DecoItemsManager.DecoTag;
 
 public class DecoItemsListener implements Listener {
 
@@ -28,21 +27,19 @@ public class DecoItemsListener implements Listener {
 
             var equip = stand.getEquipment();
             var helmet = equip.getHelmet();
-            var manager = instance.getDecoLunchManager();
+            var manager = instance.getDecoItemsManager();
 
             if (helmet != null && manager.isDecoItem(helmet)) {
                 var decoItem = manager.getDecoItem(helmet);
 
                 var drops = e.getDrops();
-                drops.clear();
                 drops.add(decoItem.getItemStack());
-                Bukkit.broadcastMessage("DROP");
-                
+
             }
         }
     }
 
-    //TODO: ITEM FOR ROTATE, FOR INVULNERABLE, GRAVITY, ADD TAGS DELETE, DELETE DECOLUNCH
+    // DECOLUNCH
 
     @EventHandler
     public void onPlace(PlayerInteractAtEntityEvent e) {
@@ -51,17 +48,17 @@ public class DecoItemsListener implements Listener {
             var player = e.getPlayer();
             var equip = stand.getEquipment();
             var helmet = equip.getHelmet();
-            var manager = instance.getDecoLunchManager();
+            var manager = instance.getDecoItemsManager();
 
-            if (helmet != null && manager.isDecoItem(helmet)) {//TODO: ACCEPT RIGHT AND LEFT HAND 
+            if (helmet != null && manager.isDecoItem(helmet)) {
                 var decoItem = manager.getDecoItem(helmet);
                 var decoTags = decoItem.getDecoTags();
 
-                if (decoTags.contains(DecoTag.SIT) && stand.getPassengers().isEmpty()){
-                  
+                if (decoTags.contains(DecoTag.SIT) && stand.getPassengers().isEmpty()) {
+
                     stand.addPassenger(player);
                 }
-                 
+
             }
 
         }
@@ -76,51 +73,33 @@ public class DecoItemsListener implements Listener {
         var item = equipment.getItem(hand);
         var block = e.getClickedBlock();
 
-        if (item == null || block == null)
+        if (item == null)
             return;
 
-        var manager = instance.getDecoLunchManager();
-        var loc = block.getLocation();
+        var manager = instance.getDecoItemsManager();
 
-        /*if (action == Action.RIGHT_CLICK_BLOCK && block != null && block.getType() == Material.BARRIER) {
-
-            if (manager.isDecoHammer(item)) {
-                var decoItemStand = manager.getDecoStand(loc);
-
-                if (decoItemStand != null) {
-                    // remove decoitem from block
-                    var decoItem = manager.getDecoItem(decoItemStand);
-                    block.setType(Material.AIR);
-                    decoItemStand.remove();
-                    manager.damageHammer(item);
-                    loc.getWorld().dropItemNaturally(loc, decoItem.getItemStack());
-
-                } else {
-                    block.setType(Material.AIR);
-                    // remove barrier that doesnt have deco stand
-                }
-                return;
-            }
-            var decoStand = manager.getDecoStand(loc);
-
-            if (decoStand != null && manager.isDecoStand(decoStand)) {
-
-                var decoItem = manager.getDecoItem(decoStand);
-                var decoTags = decoItem.getDecoTags();
-
-                if (decoTags.contains(DecoTag.SIT) && decoStand.getPassengers().isEmpty()) {
-                    decoStand.addPassenger(player);
-                }
-            }
-
-        } else */
-        if (action == Action.RIGHT_CLICK_BLOCK && manager.isDecoItem(item)) {
-            // put deco item to in loc
-            block = block.getRelative(e.getBlockFace());
-            loc = block.getLocation();
+        if (manager.isDecoItem(item)) {
             var decoItem = manager.getDecoItem(item);
             var tags = decoItem.getDecoTags();
-            manager.spawnDecoStand(loc, player, decoItem);
+
+            if (tags.contains(DecoTag.HAT)
+                    && (action == Action.RIGHT_CLICK_BLOCK || action == Action.RIGHT_CLICK_AIR)) {
+
+                if (equipment.getHelmet() != null) {
+                    var helmet = equipment.getHelmet();
+                    equipment.setItem(hand, helmet);
+                    equipment.setHelmet(item);
+                } else {
+                    equipment.setHelmet(item);
+                    equipment.setItem(hand, null);
+                }
+
+            } else if (tags.contains(DecoTag.STAND) && action == Action.RIGHT_CLICK_BLOCK) {
+                var loc = block.getLocation();
+                block = block.getRelative(e.getBlockFace());
+                loc = block.getLocation();
+                manager.spawnDecoStand(loc, player, decoItem);
+                
                 if (item.getAmount() == 1) {
                     equipment.setItem(hand, null);
                 } else {
@@ -132,7 +111,44 @@ public class DecoItemsListener implements Listener {
                     loc.getBlock().setType(Material.BARRIER);
                 }
 
+            }
+
         }
+
+        if (block != null && block.getType() == Material.BARRIER) {
+            var loc = block.getLocation();
+            var decoItemStand = manager.getDecoStand(loc);
+
+            if (decoItemStand != null) {
+                // remove decoitem from block
+                var decoItem = manager.getDecoItem(decoItemStand);
+                var tags = decoItem.getDecoTags();
+
+                if (action == Action.LEFT_CLICK_BLOCK) {
+
+                    if (!tags.contains(DecoTag.UNBREAKABLE)) {
+                        block.setType(Material.AIR);
+                        decoItemStand.remove();
+
+                        loc.getWorld().dropItemNaturally(loc, decoItem.getItemStack());
+                    }
+
+                } else if (action == Action.RIGHT_CLICK_BLOCK) {
+
+                    if (tags.contains(DecoTag.SIT) && decoItemStand.getPassengers().isEmpty()) {
+
+                        decoItemStand.addPassenger(player);
+                    }
+
+                }
+
+            } else {
+                block.setType(Material.AIR);
+                // remove barrier that doesnt have deco stand
+            }
+
+        }
+
     }
 
 }

@@ -24,7 +24,7 @@ public class Core extends JavaPlugin {
     private static @Getter Core instance;
     private @Getter PaperCommandManager commandManager;
     private @Getter Gson gson = new GsonBuilder().setPrettyPrinting().create();
-    private @Getter DecoLunchManager decoLunchManager;
+    private @Getter DecoItemsManager decoItemsManager;
 
     @Override
     public void onEnable() {
@@ -40,7 +40,7 @@ public class Core extends JavaPlugin {
 
         //MANAGER
 
-        this.decoLunchManager = new DecoLunchManager(this);
+        this.decoItemsManager = new DecoItemsManager(this);
         pullJson();
 
         //LISTENERS
@@ -57,9 +57,8 @@ public class Core extends JavaPlugin {
     }
 
     public void pushJson(){
-        var list = DecoLunchManager.decoItems;
-
         try {
+            var list = decoItemsManager.getDecoItems();
             var jsonConfig = new JsonConfig("decoitems.json");
             var json = gson.toJson(list);
             var obj = gson.fromJson(json, JsonObject.class);
@@ -77,7 +76,7 @@ public class Core extends JavaPlugin {
             var jsonConfig = new JsonConfig("decoitems.json");
             var list = jsonConfig.getJsonObject();
             var iter = list.entrySet().iterator();
-            var map = DecoLunchManager.decoItems;
+            var map = decoItemsManager.getDecoItems();
 
             while (iter.hasNext()) {
                 var entry = iter.next();

@@ -1,6 +1,10 @@
 package me.aleiv.core.paper.commands;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -13,8 +17,7 @@ import co.aikar.commands.annotation.CommandPermission;
 import co.aikar.commands.annotation.Subcommand;
 import lombok.NonNull;
 import me.aleiv.core.paper.Core;
-import me.aleiv.core.paper.DecoLunchManager;
-import me.aleiv.core.paper.DecoLunchManager.DecoTag;
+import me.aleiv.core.paper.DecoItemsManager.DecoTag;
 import me.aleiv.core.paper.objects.DecoItem;
 import net.md_5.bungee.api.ChatColor;
 
@@ -23,56 +26,160 @@ import net.md_5.bungee.api.ChatColor;
 public class DecoItemsCMD extends BaseCommand {
 
     private @NonNull Core instance;
-    String errorColor = "#b2383a";
-    String cmdColor = "#38b290";
 
     public DecoItemsCMD(Core instance) {
         this.instance = instance;
 
+        var manager = instance.getCommandManager();
+
+        manager.getCommandCompletions().registerStaticCompletion("num", "0");
+        manager.getCommandCompletions().registerStaticCompletion("name", "name");
+
+        manager.getCommandCompletions().registerAsyncCompletion("bool", c -> {
+            return ImmutableList.of("true", "false");
+        });
+
+        manager.getCommandCompletions().registerAsyncCompletion("decotag", c -> {
+            return Arrays.stream(DecoTag.values()).map(val -> val.toString()).toList();
+        });
+
+        manager.getCommandCompletions().registerAsyncCompletion("materials", c -> {
+            return Arrays.stream(Material.values()).map(val -> val.toString()).toList();
+        });
+
+        manager.getCommandCompletions().registerAsyncCompletion("decoitems", c -> {
+            var decoItemsManager =  instance.getDecoItemsManager();
+            var decoItems = decoItemsManager.getDecoItems();
+            return decoItems.keySet().stream().toList();
+        });
+
     }
 
-    @Subcommand("register")
-    public void register(CommandSender sender, String name, int customModelData, Material material, DecoTag decoTag) {
+    @Subcommand("give")
+    @CommandCompletion("@decoitems")
+    public void give(Player sender, String decoItemName){
 
-        var decoitems = DecoLunchManager.decoItems;
+        var inv = sender.getInventory();
+        var decoItemsManager =  instance.getDecoItemsManager();
+        var decoItems = decoItemsManager.getDecoItems();
 
-        if (decoitems.containsKey(name)) {
-            sender.sendMessage(ChatColor.of(errorColor) + "DecoItem " + name + " is already registered.");
+        if(decoItems.containsKey(decoItemName)){
+            
+            var decoItem = decoItems.get(decoItemName);
+            inv.addItem(decoItem.getItemStack());
+            sender.sendMessage(ChatColor.YELLOW + "Given sender" + decoItem.getName() + ".");
 
-        } else {
-            var decoitem = new DecoItem(name, customModelData, material, List.of(decoTag));
+        }else{
+            sender.sendMessage(ChatColor.RED + "Deco Item " + decoItemName + " doesn't exist.");
+        }
+        
+        
+    }
 
-            var player = (Player) sender;
-            player.getInventory().addItem(decoitem.getItemStack());
+    @Subcommand("tag")
+    @CommandCompletion("@decotag @decoitems")
+    public void tag(CommandSender sender, DecoTag decoTag, String decoItemName){
 
-            decoitems.put(name, decoitem);
+        var decoItemsManager =  instance.getDecoItemsManager();
+        var decoItems = decoItemsManager.getDecoItems();
+
+        if(decoItems.containsKey(decoItemName)){
+            
+            var decoItem = decoItems.get(decoItemName);
+            var tags = decoItem.getDecoTags();
+
+            if(tags.contains(decoTag)){
+                tags.remove(decoTag);
+                sender.sendMessage(ChatColor.YELLOW + "Deco Tag removed from " + decoItem.getName() + ".");
+            }else{
+                tags.add(decoTag);
+                sender.sendMessage(ChatColor.YELLOW + "Deco Tag added to " + decoItem.getName() + ".");
+            }
             instance.pushJson();
 
-            sender.sendMessage(ChatColor.of(cmdColor) + "DecoItem " + name + " registered.");
+        }else{
+            sender.sendMessage(ChatColor.RED + "Deco Item " + decoItemName + " doesn't exist.");
+        }
+        
+        
+    }
 
+    @Subcommand("add")
+    @CommandCompletion("@num @materials @decotag @name")
+    public void add(CommandSender sender, int customModelData, Material material, DecoTag decoTag, String decoItemName) {
+
+        var decoItemsManager =  instance.getDecoItemsManager();
+        var decoItems = decoItemsManager.getDecoItems();
+
+        var existModelData = !decoItems.values().stream().filter(cb -> cb.getCustomModelData() == customModelData).toList().isEmpty();
+
+        if (decoItems.containsKey(decoItemName)) {
+
+            sender.sendMessage(ChatColor.RED + "Can't add Deco Item " + decoItemName + ", name already registered.");
+
+        }else if(existModelData){
+
+            sender.sendMessage(ChatColor.RED + "Can't add Deco Item " + decoItemName + ", custom model data already exist.");
+
+        }else {
+
+            List<DecoTag> list = new ArrayList<>();
+            list.add(decoTag);
+            
+            var customBlock = new DecoItem(decoItemName, customModelData, material, list);
+
+            decoItems.put(decoItemName, customBlock);
+            instance.pushJson();
+            sender.sendMessage(ChatColor.YELLOW + "Added new Deco Item " + decoItemName + ".");
         }
 
     }
 
-    @Subcommand("get")
+    @Subcommand("remove")
     @CommandCompletion("@decoitems")
-    public void get(CommandSender sender, String name) {
+    public void remove(CommandSender sender, String decoItemName) {
+        var decoItemsManager =  instance.getDecoItemsManager();
+        var decoItems = decoItemsManager.getDecoItems();
 
-        var decoitems = DecoLunchManager.decoItems;
-
-        if (!decoitems.containsKey(name)) {
-            sender.sendMessage(ChatColor.of(errorColor) + "DecoItem " + name + " is not registered.");
+        if (decoItems.containsKey(decoItemName)) {
+            decoItems.remove(decoItemName);
+            instance.pushJson();
+            sender.sendMessage(ChatColor.YELLOW + "Removed Deco Item " + decoItemName + ".");
 
         } else {
-            var decoitem = decoitems.get(name);
 
-            var player = (Player) sender;
-            player.getInventory().addItem(decoitem.getItemStack());
-
-            sender.sendMessage(ChatColor.of(cmdColor) + "DecoItem " + name + " given.");
-
+            sender.sendMessage(ChatColor.RED + "Deco Item " + decoItemName + " doesn't exist.");
         }
 
     }
+
+    @Subcommand("list")
+    public void list(CommandSender sender) {
+        var decoItemsManager =  instance.getDecoItemsManager();
+        var decoItems = decoItemsManager.getDecoItems();
+
+        sender.sendMessage(ChatColor.YELLOW + "Custom block list: " + ChatColor.WHITE + decoItems.keySet().toString() + ".");
+    }
+
+    @Subcommand("tags")
+    @CommandCompletion("@decoitems")
+    public void tags(CommandSender sender, String decoItemName){
+
+        var decoItemsManager =  instance.getDecoItemsManager();
+        var decoItems = decoItemsManager.getDecoItems();
+
+        if(decoItems.containsKey(decoItemName)){
+            
+            var decoItem = decoItems.get(decoItemName);
+
+            sender.sendMessage(ChatColor.YELLOW + decoItem.getName() + " tags: " + decoItem.getDecoTags().toString());
+
+        }else{
+            sender.sendMessage(ChatColor.RED + "Deco Item " + decoItemName + " doesn't exist.");
+        }
+        
+        
+    }
+
 
 }
