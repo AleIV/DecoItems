@@ -70,6 +70,8 @@ public class DecoItemsListener implements Listener {
         var hand = e.getHand();
         var player = e.getPlayer();
         var equipment = player.getEquipment();
+        if(hand == null) return;
+
         var item = equipment.getItem(hand);
         var block = e.getClickedBlock();
 
