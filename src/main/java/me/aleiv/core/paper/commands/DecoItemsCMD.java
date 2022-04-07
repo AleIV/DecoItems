@@ -111,7 +111,7 @@ public class DecoItemsCMD extends BaseCommand {
         var decoItemsManager =  instance.getDecoItemsManager();
         var decoItems = decoItemsManager.getDecoItems();
 
-        var existModelData = !decoItems.values().stream().filter(cb -> cb.getCustomModelData() == customModelData).toList().isEmpty();
+        var existModelData = !decoItems.values().stream().filter(cb -> cb.getCustomModelData() == customModelData && cb.getMaterial() == material).toList().isEmpty();
 
         if (decoItems.containsKey(decoItemName)) {
 
