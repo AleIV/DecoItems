@@ -78,7 +78,7 @@ public class DecoItemsManager{
         var meta = item.getItemMeta();
         if (isDecoItem(item)) {
             var data = meta.getCustomModelData();
-            return decoItems.values().stream().filter(deco -> deco.getCustomModelData() == data).findAny().orElse(null);
+            return decoItems.values().stream().filter(deco -> deco.getCustomModelData() == data && item.getType() == deco.getMaterial()).findAny().orElse(null);
         }
         return null;
     }
