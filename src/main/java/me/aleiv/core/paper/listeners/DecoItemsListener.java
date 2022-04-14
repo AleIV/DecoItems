@@ -144,10 +144,10 @@ public class DecoItemsListener implements Listener {
 
                 }
 
-            } else {
+            } /*else {
                 block.setType(Material.AIR);
                 // remove barrier that doesnt have deco stand
-            }
+            }*/
 
         }
 
