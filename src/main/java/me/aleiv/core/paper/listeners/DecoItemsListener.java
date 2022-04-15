@@ -13,6 +13,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import me.aleiv.core.paper.Core;
 import me.aleiv.core.paper.DecoItemsManager.DecoTag;
 import me.aleiv.core.paper.events.DecoItemClickEvent;
+import me.aleiv.core.paper.events.DecoItemPlaceEvent;
 
 public class DecoItemsListener implements Listener {
 
@@ -69,12 +70,41 @@ public class DecoItemsListener implements Listener {
     }
 
     @EventHandler
+    public void onPlaceDecoItem(DecoItemPlaceEvent e) {
+        if (!e.isCanceled()) {
+            var block = e.getBlock();
+            var player = e.getPlayer();
+            var equipment = player.getEquipment();
+            var loc = block.getLocation();
+    
+            var decoItem = e.getDecoItem();
+            var item = e.getItem();
+            var tags = decoItem.getDecoTags();
+            var manager = instance.getDecoItemsManager();
+            var hand = e.getHand();
+            manager.spawnDecoStand(loc, player, decoItem);
+
+            if (item.getAmount() == 1) {
+                equipment.setItem(hand, null);
+            } else {
+                item.setAmount(item.getAmount() - 1);
+                equipment.setItem(hand, item);
+            }
+
+            if (tags.contains(DecoTag.BARRIER)) {
+                loc.getBlock().setType(Material.BARRIER);
+            }
+        }
+    }
+
+    @EventHandler
     public void onPlace(PlayerInteractEvent e) {
         var action = e.getAction();
         var hand = e.getHand();
         var player = e.getPlayer();
         var equipment = player.getEquipment();
-        if(hand == null) return;
+        if (hand == null)
+            return;
 
         var item = equipment.getItem(hand);
         var block = e.getClickedBlock();
@@ -101,21 +131,9 @@ public class DecoItemsListener implements Listener {
                 }
 
             } else if (tags.contains(DecoTag.STAND) && action == Action.RIGHT_CLICK_BLOCK) {
-                var loc = block.getLocation();
-                block = block.getRelative(e.getBlockFace());
-                loc = block.getLocation();
-                manager.spawnDecoStand(loc, player, decoItem);
-                
-                if (item.getAmount() == 1) {
-                    equipment.setItem(hand, null);
-                } else {
-                    item.setAmount(item.getAmount() - 1);
-                    equipment.setItem(hand, item);
-                }
 
-                if (tags.contains(DecoTag.BARRIER)) {
-                    loc.getBlock().setType(Material.BARRIER);
-                }
+                block = block.getRelative(e.getBlockFace());
+                Bukkit.getPluginManager().callEvent(new DecoItemPlaceEvent(hand, item, block, decoItem, player, false));
 
             }
 
@@ -142,7 +160,7 @@ public class DecoItemsListener implements Listener {
                     }
 
                 } else if (action == Action.RIGHT_CLICK_BLOCK) {
-                    
+
                     if (tags.contains(DecoTag.SIT) && decoItemStand.getPassengers().isEmpty()) {
 
                         decoItemStand.addPassenger(player);
@@ -150,11 +168,12 @@ public class DecoItemsListener implements Listener {
 
                 }
 
-            } /*else {
-                block.setType(Material.AIR);
-                // remove barrier that doesnt have deco stand
-            }*/
-            
+            } /*
+               * else {
+               * block.setType(Material.AIR);
+               * // remove barrier that doesnt have deco stand
+               * }
+               */
 
         }
 
