@@ -1,5 +1,6 @@
 package me.aleiv.core.paper.listeners;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.event.EventHandler;
@@ -11,6 +12,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 
 import me.aleiv.core.paper.Core;
 import me.aleiv.core.paper.DecoItemsManager.DecoTag;
+import me.aleiv.core.paper.events.DecoItemClickEvent;
 
 public class DecoItemsListener implements Listener {
 
@@ -53,6 +55,8 @@ public class DecoItemsListener implements Listener {
             if (helmet != null && manager.isDecoItem(helmet)) {
                 var decoItem = manager.getDecoItem(helmet);
                 var decoTags = decoItem.getDecoTags();
+
+                Bukkit.getPluginManager().callEvent(new DecoItemClickEvent(stand, decoItem, player));
 
                 if (decoTags.contains(DecoTag.SIT) && stand.getPassengers().isEmpty()) {
 
@@ -126,6 +130,8 @@ public class DecoItemsListener implements Listener {
                 var decoItem = manager.getDecoItem(decoItemStand);
                 var tags = decoItem.getDecoTags();
 
+                Bukkit.getPluginManager().callEvent(new DecoItemClickEvent(decoItemStand, decoItem, player));
+
                 if (action == Action.LEFT_CLICK_BLOCK) {
 
                     if (!tags.contains(DecoTag.UNBREAKABLE)) {
@@ -136,7 +142,7 @@ public class DecoItemsListener implements Listener {
                     }
 
                 } else if (action == Action.RIGHT_CLICK_BLOCK) {
-
+                    
                     if (tags.contains(DecoTag.SIT) && decoItemStand.getPassengers().isEmpty()) {
 
                         decoItemStand.addPassenger(player);
@@ -148,6 +154,7 @@ public class DecoItemsListener implements Listener {
                 block.setType(Material.AIR);
                 // remove barrier that doesnt have deco stand
             }*/
+            
 
         }
 
