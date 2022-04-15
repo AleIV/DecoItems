@@ -70,7 +70,7 @@ public class DecoItemsListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlaceDecoItem(DecoItemPlaceEvent e) {
         if (!e.isCanceled()) {
             var block = e.getBlock();
